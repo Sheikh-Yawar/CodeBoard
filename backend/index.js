@@ -47,7 +47,6 @@ io.on("connection", (socket) => {
   }`;
       roomData[roomId] = {
         code,
-        canvasData: [],
         messages: [],
         selectedLanguage: "",
       };
@@ -111,36 +110,6 @@ io.on("connection", (socket) => {
       language,
     });
   });
-
-  socket.on(ACTIONS.CANVAS_CHANGE, ({ roomId, type, username, newChanges }) => {
-    if (roomData[roomId]) {
-      roomData[roomId] = {
-        ...roomData[roomId],
-        canvasData: [...roomData[roomId].canvasData, ...newChanges],
-      };
-    }
-
-    const clients = getAllConnectedClients(roomId);
-
-    clients.forEach(({ socketId }) => {
-      io.to(socketId).emit(ACTIONS.CANVAS_CHANGE, {
-        type,
-        username,
-        newChanges,
-      });
-    });
-  });
-
-  // socket.on("user-presence", ({ presence, roomId, username }) => {
-  //   const clients = getAllConnectedClients(roomId);
-
-  //   clients.forEach(({ socketId }) => {
-  //     io.to(socketId).emit("user-presence", {
-  //       username,
-  //       presence,
-  //     });
-  //   });
-  // });
 
   socket.on("disconnecting", () => {
     const rooms = [...socket.rooms];

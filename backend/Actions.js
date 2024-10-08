@@ -6,7 +6,6 @@ const ACTIONS = {
   LANGUAGE_CHANGE: "language-change",
   SYNC_CHANGES: "sync-changes",
   MESSAGE: "message",
-  CANVAS_CHANGE: "canvas-change",
 };
 
 module.exports = { ACTIONS };

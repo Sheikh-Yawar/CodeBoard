@@ -21,15 +21,13 @@ import NameModal from "../Components/NameModal";
 
 function EditorPage() {
   const socketRef = useRef(null);
+  const editorRef = useRef(null);
   const [showCanvas, setShowCanvas] = useState(false);
-  const [newCanvasChanges, setNewCanvasChanges] = useState([]);
-  const [canvasData, setCanvasData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
   const [username, setUsername] = useState("");
   const settingsContext = useContext(SettingsContext);
   const location = useLocation();
-  const navigate = useNavigate();
   const { roomId } = useParams();
   const [editorContent, setEditorContent] = useState("");
   const [clients, setClients] = useState([]);
@@ -53,10 +51,6 @@ function EditorPage() {
     function handleErrors(e) {
       console.log("Socker Error", e);
       setShowLoader(true);
-      // toast.error(
-      //   "Connection to the server failed. Attempting to reconnect..."
-      // );
-      // navigate("/", { replace: true });
     }
 
     async function init() {
@@ -148,15 +142,6 @@ function EditorPage() {
         }
       );
 
-      socketRef.current.on(
-        ACTIONS.CANVAS_CHANGE,
-        ({ type, username, newChanges }) => {
-          if (username !== currentUsername) {
-            setNewCanvasChanges(newChanges);
-          }
-          setCanvasData((prev) => [...prev, ...newChanges]);
-        }
-      );
       // Listening for disconnected
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
         toast(`${username} left the room.`, {
@@ -229,19 +214,18 @@ function EditorPage() {
           <Navbar
             clients={clients}
             socketRef={socketRef}
+            editorRef={editorRef}
             messages={messages}
             handleTabClick={handleTabClick}
+            showCanvas={showCanvas}
             setShowCanvas={showCanvasfunc}
           />
         )}
         {showCanvas ? (
           <Canvas
             username={!location.state ? username : location.state.username}
-            socketRef={socketRef}
             roomId={roomId}
-            newCanvasChanges={newCanvasChanges}
-            canvasData={canvasData}
-            currentTab={currentTab}
+            editorRef={editorRef}
           />
         ) : (
           <CodeMirror

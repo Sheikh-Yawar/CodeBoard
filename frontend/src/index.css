@@ -46,6 +46,10 @@ body {
   margin-bottom: 55px;
 }
 
+.tl-watermark_SEE-LICENSE {
+  display: none !important;
+}
+
 @media (min-width: 1024px) {
   .tlui-toolbar__tools {
     margin-bottom: 0px;

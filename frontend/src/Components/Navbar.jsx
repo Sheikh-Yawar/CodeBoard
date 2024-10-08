@@ -3,15 +3,19 @@ import { LiaUserFriendsSolid } from "react-icons/lia";
 import { IoSettingsOutline } from "react-icons/io5";
 import { LuPencilLine } from "react-icons/lu";
 import { FaCode } from "react-icons/fa";
-import { useEffect, useRef, useState } from "react";
+import { RiRobot3Fill } from "react-icons/ri";
+import { useState } from "react";
 import ViewMembers from "./ViewMembers";
 import Chat from "./Chat";
 import Settings from "./Settings";
+import CodeBoardBot from "./CodeBoardBot";
 function Navbar({
   socketRef,
+  editorRef,
   messages,
   clients,
   handleTabClick,
+  showCanvas,
   setShowCanvas,
 }) {
   const [showSidebar, setShowSidebar] = useState(false);
@@ -60,6 +64,17 @@ function Navbar({
     handleTabClick(icon);
   }
 
+  function handleCodeBoardBotClick(icon) {
+    if (showSidebar && lastClickedIcon === icon) {
+      setShowSidebar(false);
+      setLastClickedIcon(null);
+    } else {
+      setShowSidebar(true);
+      setLastClickedIcon(icon);
+    }
+    handleTabClick(icon);
+  }
+
   return (
     <div className="flex">
       <div className=" fixed bottom-0 left-0 z-50 flex items-center h-[50px] w-full gap-10 px-5 border-t border-[#89919d] bg-background  md:static md:h-screen md:w-[50px] md:min-w-[50px] md:flex-col md:border-r md:border-t-0 md:p-2 md:pt-4 cursor-pointer text-[#89919d]">
@@ -74,6 +89,14 @@ function Navbar({
             lastClickedIcon === "canvas" && "text-white scale-[2.2]"
           } scale-[2] `}
           onClick={() => handleCodeOrCanvasClick("canvas")}
+        />
+
+        <RiRobot3Fill
+          title="Ask CodeBoardBot for help"
+          className={`${
+            lastClickedIcon === "codeboardbot" && "text-white scale-[2.2]"
+          } scale-[1.7] `}
+          onClick={() => handleCodeBoardBotClick("codeboardbot")}
         />
 
         <LiaUserFriendsSolid
@@ -102,6 +125,9 @@ function Navbar({
           showSidebar ? "block" : "hidden"
         }`}
       >
+        {lastClickedIcon === "codeboardbot" && (
+          <CodeBoardBot showCanvas={showCanvas} editorRef={editorRef} />
+        )}
         {lastClickedIcon === "settings" && <Settings socketRef={socketRef} />}
         {lastClickedIcon === "viewmembers" && <ViewMembers clients={clients} />}
         {lastClickedIcon === "chat" && (

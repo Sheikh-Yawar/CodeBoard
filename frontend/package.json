@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tldraw/store": "^2.1.1",
+    "@tldraw/store": "^3.2.0",
+    "@tldraw/sync": "^3.2.0",
+    "tldraw": "^3.2.0",
     "@uiw/codemirror-extensions-color": "^4.21.25",
     "@uiw/codemirror-extensions-hyper-link": "^4.21.25",
     "@uiw/codemirror-extensions-langs": "^4.21.25",
@@ -22,11 +24,10 @@
     "react-avatar": "^5.0.3",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
-    "react-icons": "^5.0.1",
+    "react-icons": "^5.3.0",
     "react-konva": "^18.2.10",
     "react-router-dom": "^6.22.3",
     "socket.io-client": "^4.7.5",
-    "tldraw": "^2.1.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
