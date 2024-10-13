@@ -7,9 +7,9 @@
 @tailwind utilities;
 
 body {
-  --sb-track-color: #3d404a;
-  --sb-thumb-color: #3d404a;
-  --sb-size: 6px;
+  --sb-track-color: #18181a;
+  --sb-thumb-color: #36aee5;
+  --sb-size: 10px;
 }
 
 ::-webkit-scrollbar {
@@ -25,6 +25,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
+  cursor: pointer;
   background: var(--sb-thumb-color);
   border-radius: 5px;
   height: var(--sb-size);

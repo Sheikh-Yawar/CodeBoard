@@ -1,7 +1,11 @@
 const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+const fileUpload = require("express-fileupload");
 const { Server } = require("socket.io");
 const http = require("http");
 const { ACTIONS } = require("./Actions");
+const { analyzeImage, generateContent } = require("./GoogleGemini");
 
 const app = express();
 const server = http.createServer(app);
@@ -10,6 +14,15 @@ const io = new Server(server, {
     origin: "*",
   },
 });
+
+app.use(
+  cors({
+    origin: "*",
+  })
+);
+
+app.use(express.json());
+app.use(fileUpload());
 
 const userSocketMap = {};
 const roomData = {};
@@ -49,6 +62,7 @@ io.on("connection", (socket) => {
         code,
         messages: [],
         selectedLanguage: "",
+        text: "",
       };
     }
     userSocketMap[socket.id] = username;
@@ -64,9 +78,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
+    const clients = getAllConnectedClients(roomId);
+    console.log("Clients", clients);
     //Send to all users except the sender
     roomData[roomId] = { ...roomData[roomId], code };
     socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
+  });
+
+  socket.on(ACTIONS.TEXT_CHANGE, ({ roomId, text }) => {
+    roomData[roomId] = { ...roomData[roomId], text };
+
+    socket.in(roomId).emit(ACTIONS.TEXT_CHANGE, { text });
   });
 
   socket.on(ACTIONS.SYNC_CHANGES, ({ roomId, socketId }) => {
@@ -123,6 +145,17 @@ io.on("connection", (socket) => {
     delete userSocketMap[socket.id];
     socket.leave();
   });
+});
+
+app.post("/analyze-image", async (req, res) => {
+  const { file } = req.files;
+  const result = await analyzeImage(file);
+  res.json(result);
+});
+app.post("/generate-content", async (req, res) => {
+  const { userInstructions } = req.body;
+  const result = await generateContent(userInstructions);
+  res.json(result);
 });
 
 const PORT = process.env.PORT || 3000;

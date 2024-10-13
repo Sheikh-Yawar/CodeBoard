@@ -4,9 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: "#22242a",
+        tabbar: "#18181a",
         primary: "#36AEE5",
         secondary: "#3d404a",
+        background: "#1e1e1e",
       },
 
       fontFamily: {
