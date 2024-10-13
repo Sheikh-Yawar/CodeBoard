@@ -14,23 +14,16 @@ function Navbar({
   editorRef,
   messages,
   clients,
-  handleTabClick,
-  showCanvas,
-  setShowCanvas,
+  activeTab,
+  codeBoardBotResults,
+  setCodeBoardBotResults,
+  isLoadingImg,
+  setIsLoadingImg,
+  isLoadingContent,
+  setIsLoadingContent,
 }) {
   const [showSidebar, setShowSidebar] = useState(false);
   const [lastClickedIcon, setLastClickedIcon] = useState("code");
-
-  function handleCodeOrCanvasClick(icon) {
-    if (icon === "canvas") {
-      setShowCanvas(true);
-    } else {
-      setShowCanvas(false);
-    }
-    setLastClickedIcon(icon);
-    handleTabClick(icon);
-    setShowSidebar(false);
-  }
 
   function handleViewMembersClick(icon) {
     if (showSidebar && lastClickedIcon === icon) {
@@ -40,7 +33,6 @@ function Navbar({
       setShowSidebar(true);
       setLastClickedIcon(icon);
     }
-    handleTabClick(icon);
   }
   function handleChatClick(icon) {
     if (showSidebar && lastClickedIcon === icon) {
@@ -50,7 +42,6 @@ function Navbar({
       setShowSidebar(true);
       setLastClickedIcon(icon);
     }
-    handleTabClick(icon);
   }
 
   function handleSettingsClick(icon) {
@@ -61,7 +52,6 @@ function Navbar({
       setShowSidebar(true);
       setLastClickedIcon(icon);
     }
-    handleTabClick(icon);
   }
 
   function handleCodeBoardBotClick(icon) {
@@ -72,25 +62,11 @@ function Navbar({
       setShowSidebar(true);
       setLastClickedIcon(icon);
     }
-    handleTabClick(icon);
   }
 
   return (
     <div className="flex">
-      <div className=" fixed bottom-0 left-0 z-50 flex items-center h-[50px] w-full gap-10 px-5 border-t border-[#89919d] bg-background  md:static md:h-screen md:w-[50px] md:min-w-[50px] md:flex-col md:border-r md:border-t-0 md:p-2 md:pt-4 cursor-pointer text-[#89919d]">
-        <FaCode
-          className={`${
-            lastClickedIcon === "code" && "text-white scale-[2.2]"
-          } scale-[2] `}
-          onClick={() => handleCodeOrCanvasClick("code")}
-        />
-        <LuPencilLine
-          className={`${
-            lastClickedIcon === "canvas" && "text-white scale-[2.2]"
-          } scale-[2] `}
-          onClick={() => handleCodeOrCanvasClick("canvas")}
-        />
-
+      <div className="fixed bottom-0 left-0 z-50 flex items-center h-[50px] w-full gap-10 px-5 bg-tabbar md:static md:h-screen md:w-[50px] md:pt-14 md:min-w-[50px] md:flex-col md:p-2 cursor-pointer text-[#89919d]">
         <RiRobot3Fill
           title="Ask CodeBoardBot for help"
           className={`${
@@ -121,12 +97,21 @@ function Navbar({
       </div>
 
       <div
-        className={`absolute left-0 top-0 z-20 h-screen w-screen flex-col bg-dark md:static md:w-[350px] bg-background ${
+        className={`z-20 h-screen w-screen pt-5 flex-col bg-dark md:static md:w-[350px] bg-tabbar ${
           showSidebar ? "block" : "hidden"
         }`}
       >
         {lastClickedIcon === "codeboardbot" && (
-          <CodeBoardBot showCanvas={showCanvas} editorRef={editorRef} />
+          <CodeBoardBot
+            activeTab={activeTab}
+            editorRef={editorRef}
+            codeBoardBotResults={codeBoardBotResults}
+            setCodeBoardBotResults={setCodeBoardBotResults}
+            isLoadingImg={isLoadingImg}
+            setIsLoadingImg={setIsLoadingImg}
+            isLoadingContent={isLoadingContent}
+            setIsLoadingContent={setIsLoadingContent}
+          />
         )}
         {lastClickedIcon === "settings" && <Settings socketRef={socketRef} />}
         {lastClickedIcon === "viewmembers" && <ViewMembers clients={clients} />}

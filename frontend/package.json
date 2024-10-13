@@ -10,15 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@blocknote/core": "^0.16.0",
+    "@blocknote/mantine": "^0.16.0",
+    "@blocknote/react": "^0.16.0",
     "@tldraw/store": "^3.2.0",
     "@tldraw/sync": "^3.2.0",
-    "tldraw": "^3.2.0",
     "@uiw/codemirror-extensions-color": "^4.21.25",
     "@uiw/codemirror-extensions-hyper-link": "^4.21.25",
     "@uiw/codemirror-extensions-langs": "^4.21.25",
     "@uiw/codemirror-themes-all": "^4.21.25",
     "@uiw/react-codemirror": "^4.21.25",
     "codemirror": "^5.65.16",
+    "copy-to-clipboard": "^3.3.3",
     "konva": "^9.3.6",
     "react": "^18.2.0",
     "react-avatar": "^5.0.3",
@@ -27,7 +30,9 @@
     "react-icons": "^5.3.0",
     "react-konva": "^18.2.10",
     "react-router-dom": "^6.22.3",
+    "react-textarea-autosize": "^8.5.4",
     "socket.io-client": "^4.7.5",
+    "tldraw": "^3.2.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

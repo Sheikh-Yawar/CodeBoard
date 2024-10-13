@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { SettingsContext } from "../../context/SettingsContext";
-import Navbar from "../Components/Navbar";
 import CodeMirror from "@uiw/react-codemirror";
 import * as themes from "@uiw/codemirror-themes-all";
 import { loadLanguage } from "@uiw/codemirror-extensions-langs";
@@ -18,21 +17,28 @@ import { initSocket } from "../socket";
 import ACTIONS from "../Actions";
 import Canvas from "../Components/Canvas";
 import NameModal from "../Components/NameModal";
+import Tabs from "../Components/Tabs";
+import TextEditor from "../Components/TextEditor";
 
 function EditorPage() {
   const socketRef = useRef(null);
   const editorRef = useRef(null);
-  const [showCanvas, setShowCanvas] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
   const [username, setUsername] = useState("");
+  const [codeBoardBotResults, setCodeBoardBotResults] = useState({
+    imageAnalysisResult: [],
+    contentGenerationResults: [],
+  });
+  const [isLoadingImg, setIsLoadingImg] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
   const settingsContext = useContext(SettingsContext);
   const location = useLocation();
   const { roomId } = useParams();
   const [editorContent, setEditorContent] = useState("");
+  const [textContent, setTextContent] = useState("");
   const [clients, setClients] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [currentTab, setCurrentTab] = useState("code");
 
   const handleEditorChange = (value) => {
     socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code: value });
@@ -98,6 +104,12 @@ function EditorPage() {
           setEditorContent(code);
         }
       });
+      // Listening for Text changes
+      socketRef.current.on(ACTIONS.TEXT_CHANGE, ({ text }) => {
+        if (text !== null) {
+          setTextContent(text);
+        }
+      });
       // Listening for code change
       socketRef.current.on(ACTIONS.SYNC_CHANGES, ({ roomData }) => {
         if (roomData) {
@@ -160,10 +172,6 @@ function EditorPage() {
     };
   }, [username]);
 
-  function showCanvasfunc(val) {
-    setShowCanvas(val);
-  }
-
   function handleModalJoinClick(username) {
     if (username.length < 5 || username.length > 20) {
       return;
@@ -172,26 +180,6 @@ function EditorPage() {
     sessionStorage.setItem("currentUsername", username);
     setUsername(username);
     setShowModal(false);
-  }
-
-  function handleTabClick(icon) {
-    switch (icon) {
-      case "code":
-        setCurrentTab(icon);
-        break;
-      case "canvas":
-        setCurrentTab(icon);
-        break;
-      case "viewmembers":
-        setCurrentTab(icon);
-        break;
-      case "chat":
-        setCurrentTab(icon);
-        break;
-      case "settings":
-        setCurrentTab(icon);
-        break;
-    }
   }
 
   const blocker = useCallback(() => {
@@ -205,46 +193,75 @@ function EditorPage() {
 
   useBlocker(blocker);
 
+  const tabsData = [
+    {
+      label: "Code Editor",
+      content: (
+        <CodeMirror
+          value={editorContent}
+          onChange={handleEditorChange}
+          extensions={[
+            loadLanguage(settingsContext.settings.language),
+            color,
+            hyperLink,
+            EditorView.lineWrapping,
+            EditorView.updateListener.of((update) => {
+              if (update.docChanged) {
+                const view = update.view;
+
+                // Scroll to the bottom after changes
+                view.dispatch({
+                  effects: EditorView.scrollIntoView(view.state.doc.length),
+                });
+              }
+            }),
+          ]}
+          theme={themes[settingsContext.settings.theme]}
+          height={"90vh"}
+          width="96.3vw"
+          style={{ fontSize: "20px" }}
+        />
+      ),
+    },
+    {
+      label: "Canvas",
+      content: (
+        <Canvas
+          username={!location.state ? username : location.state.username}
+          roomId={roomId}
+          editorRef={editorRef}
+        />
+      ),
+    },
+    {
+      label: "Text Editor",
+      content: (
+        <TextEditor
+          socketRef={socketRef}
+          textContent={textContent}
+          setTextContent={setTextContent}
+        />
+      ),
+    },
+  ];
+
   return (
-    <div>
+    <div className="overflow-x-hidden overflow-y-hidden">
       {showLoader && <CodeboardLoader />}
       {showModal && <NameModal handleJoinClick={handleModalJoinClick} />}
-      <div className="flex">
-        {!showModal && (
-          <Navbar
-            clients={clients}
-            socketRef={socketRef}
-            editorRef={editorRef}
-            messages={messages}
-            handleTabClick={handleTabClick}
-            showCanvas={showCanvas}
-            setShowCanvas={showCanvasfunc}
-          />
-        )}
-        {showCanvas ? (
-          <Canvas
-            username={!location.state ? username : location.state.username}
-            roomId={roomId}
-            editorRef={editorRef}
-          />
-        ) : (
-          <CodeMirror
-            className="overflow-auto"
-            value={editorContent}
-            onChange={handleEditorChange}
-            extensions={[
-              loadLanguage(settingsContext.settings.language),
-              color,
-              hyperLink,
-              EditorView.lineWrapping,
-            ]}
-            theme={themes[settingsContext.settings.theme]}
-            width="100vw"
-            height="100vh"
-            style={{ fontSize: "20px" }}
-          />
-        )}
-      </div>
+      <Tabs
+        tabs={tabsData}
+        clients={clients}
+        socketRef={socketRef}
+        editorRef={editorRef}
+        messages={messages}
+        codeBoardBotResults={codeBoardBotResults}
+        setCodeBoardBotResults={setCodeBoardBotResults}
+        isLoadingImg={isLoadingImg}
+        setIsLoadingImg={setIsLoadingImg}
+        isLoadingContent={isLoadingContent}
+        setIsLoadingContent={setIsLoadingContent}
+      />
     </div>
   );
 }

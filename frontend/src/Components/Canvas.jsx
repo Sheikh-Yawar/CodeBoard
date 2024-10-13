@@ -23,9 +23,8 @@ function Canvas({ roomId, username, editorRef }) {
   });
 
   return (
-    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-[49px]">
+    <div className="w-full h-full">
       <Tldraw
-        deepLinks
         store={store}
         user={user}
         onMount={(editor) => {

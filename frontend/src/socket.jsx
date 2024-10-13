@@ -1,5 +1,16 @@
 import { io } from "socket.io-client";
 const serverURL = import.meta.env.VITE_SERVER_URL;
+const serverURLMOBILE = import.meta.env.VITE_SERVER_URL_MOBILE;
+
+// const isMobileDevice = () => {
+//   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+//     navigator.userAgent
+//   );
+// };
+
+// const getServerUrl = () => {
+//   return isMobileDevice() ? serverURLMOBILE : serverURL;
+// };
 
 export const initSocket = async () => {
   const options = {
