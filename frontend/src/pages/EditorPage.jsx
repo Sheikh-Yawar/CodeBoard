@@ -1,10 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import {
-  useBlocker,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
+import { useBlocker, useLocation, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { SettingsContext } from "../../context/SettingsContext";
 import CodeMirror from "@uiw/react-codemirror";
@@ -23,6 +18,7 @@ import TextEditor from "../Components/TextEditor";
 function EditorPage() {
   const socketRef = useRef(null);
   const editorRef = useRef(null);
+  const codeEditorRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
   const [username, setUsername] = useState("");
@@ -39,6 +35,32 @@ function EditorPage() {
   const [textContent, setTextContent] = useState("");
   const [clients, setClients] = useState([]);
   const [messages, setMessages] = useState([]);
+  const cursors = useRef([
+    {
+      socketId: "d7MabZNqs1lc2_qAAAAN",
+      username: "nacheez",
+      cursorColor: "#D6AF25",
+      cursorData: { line: 4, ch: 0 },
+    },
+    {
+      socketId: "OqrRzrwY4uKf7j3dAAAQ",
+      username: "Yawar",
+      cursorColor: "#6B5532",
+      cursorData: { line: 1, ch: 0 },
+    },
+    {
+      socketId: "pwrdzQzYjl5ayArIAAAR",
+      username: "Kratos",
+      cursorColor: "#77AE9F",
+      cursorData: { line: 2, ch: 10 },
+    },
+    {
+      socketId: "4d9mwDmm7-Fy22y3AAAT",
+      username: "Yawar",
+      cursorColor: "#E87D44",
+      cursorData: { line: 1, ch: 19 },
+    },
+  ]);
 
   const handleEditorChange = (value) => {
     socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code: value });
@@ -119,8 +141,8 @@ function EditorPage() {
           setEditorContent(roomData.code);
         }
 
-        if (roomData && roomData.canvasData.length > 0) {
-          setCanvasData(roomData.canvasData);
+        if (roomData && roomData.text.length > 0) {
+          setTextContent(roomData.text);
         }
         if (roomData && roomData.messages.length > 0) {
           setMessages(roomData.messages);
@@ -128,6 +150,12 @@ function EditorPage() {
         if (roomData && roomData.selectedLanguage.length > 0) {
           settingsContext.updateSettings("language", roomData.selectedLanguage);
         }
+      });
+
+      // Handle cursor updates from other users
+      socketRef.current.on(ACTIONS.CURSOR_UPDATE, (roomData) => {
+        console.log("Room data is", roomData);
+        updateCursors();
       });
 
       // Listening for message
@@ -198,6 +226,7 @@ function EditorPage() {
       label: "Code Editor",
       content: (
         <CodeMirror
+          ref={codeEditorRef}
           value={editorContent}
           onChange={handleEditorChange}
           extensions={[
@@ -213,11 +242,25 @@ function EditorPage() {
                 view.dispatch({
                   effects: EditorView.scrollIntoView(view.state.doc.length),
                 });
+                // Get the current cursor position
+                const cursorPos = update.state.selection.main.head; // Main cursor position
+                const lineInfo = update.state.doc.lineAt(cursorPos);
+
+                // Prepare data to send to server
+                const cursorData = {
+                  line: lineInfo.number,
+                  ch: cursorPos - lineInfo.from,
+                };
+
+                socketRef.current.emit(ACTIONS.CURSOR_UPDATE, {
+                  roomId,
+                  cursorData,
+                });
               }
             }),
           ]}
           theme={themes[settingsContext.settings.theme]}
-          height={"90vh"}
+          height={window.innerWidth < 768 ? "83vh" : "90vh"}
           width="96.3vw"
           style={{ fontSize: "20px" }}
         />

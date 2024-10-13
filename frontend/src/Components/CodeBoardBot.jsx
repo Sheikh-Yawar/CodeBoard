@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import toast from "react-hot-toast";
 import { exportToBlob } from "tldraw";
 import { SettingsContext } from "../../context/SettingsContext";
-import CodeMirror from "@uiw/react-codemirror";
+import CodeMirror, { lineNumbers } from "@uiw/react-codemirror";
 import * as themes from "@uiw/codemirror-themes-all";
 import { loadLanguage } from "@uiw/codemirror-extensions-langs";
 import { EditorView } from "@uiw/react-codemirror";
@@ -84,20 +84,50 @@ const CodeBoardBot = ({
 
       let exprMatch = formattedResult.match(/"expr":\s*"(.*?)",\s*"result"/s);
 
-      let answerMatch = formattedResult.match(/"result":\s*(\d+)/);
-
       // Extract the values
       let explanation = explanationMatch
         ? explanationMatch[1]
         : "No explanation found.";
-      let processedExplanation = explanation.replace(/\\n/g, "\n");
+      let processedExplanation = explanation
+        .replace(/\\n/g, "\n")
+        .replace(/\\/g, "");
       let expr = exprMatch ? exprMatch[1] : "No expression found.";
-      let answer = answerMatch ? answerMatch[1] : "No answer found.";
+      let processedExpr = expr.replace(/\\n/g, "\n").replace(/\\/g, "");
+
+      // First, try matching the result as an object
+      let resultObjectMatch = formattedResult.match(
+        /"result":\s*(\{.*?\})\s*}/s
+      );
+      let answer;
+
+      if (resultObjectMatch) {
+        // If it's an object, parse it
+        try {
+          answer = JSON.parse(resultObjectMatch[1]);
+          // Convert object to a formatted string
+          answer = JSON.stringify(answer, null, 2);
+        } catch (error) {
+          answer = "Error parsing result object.";
+        }
+      } else {
+        // If no object, match the result as a string
+        let resultStringMatch = formattedResult.match(
+          /"result":\s*"(.*?)"\s*}/s
+        );
+        answer = resultStringMatch ? resultStringMatch[1] : "No answer found.";
+      }
+
+      // Replace \\n with newlines and remove single backslashes
+      let processedAnswer = answer.replace(/\\n/g, "\n").replace(/\\/g, "");
 
       setCodeBoardBotResults((prevResults) => ({
         ...prevResults,
         imageAnalysisResult: [
-          { expr, answer, explanation: processedExplanation },
+          {
+            expr: processedExpr,
+            answer: processedAnswer,
+            explanation: processedExplanation,
+          },
           ...prevResults.imageAnalysisResult,
         ],
       }));
@@ -150,11 +180,13 @@ const CodeBoardBot = ({
       let explanation = explanationMatch
         ? explanationMatch[1]
         : "No explanation found.";
-      let processedExplanation = explanation.replace(/\\n/g, "\n");
+      let processedExplanation = explanation
+        .replace(/\\n/g, "\n")
+        .replace(/\\/g, "");
       let code = codeMatch ? codeMatch[1] : "No code found";
       let processedCode = code.replace(/\\n/g, "\n"); // Replace '\n' with actual newline
       let content = contentMatch ? contentMatch[1] : "No content found.";
-      let processedContent = content.replace(/\\n/g, "\n");
+      let processedContent = content.replace(/\\n/g, "\n").replace(/\\/g, "");
 
       setCodeBoardBotResults((prevResults) => ({
         ...prevResults,
@@ -353,10 +385,12 @@ function ContentGenerationResult({ resultObj, timestamp }) {
             </div>
             <CodeMirror
               value={resultObj.code}
+              options={{ lineNumbers: false }}
               extensions={[
                 loadLanguage(settingsContext.settings.language),
                 color,
                 hyperLink,
+
                 EditorView.lineWrapping,
                 EditorView.editable.of(false),
                 EditorView.updateListener.of((update) => {

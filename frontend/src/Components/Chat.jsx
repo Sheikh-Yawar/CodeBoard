@@ -30,7 +30,7 @@ function Chat({ socketRef, messagesArray }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-[92vh] md:h-screen p-2 ">
+    <div className="flex flex-col w-full h-[92vh] md:h-[96vh] p-2 ">
       <div className="pb-2 text-xl font-bold">Group Chat</div>
       <div className="flex flex-col flex-1 gap-5 overflow-auto ">
         {messagesArray.length > 0 &&
