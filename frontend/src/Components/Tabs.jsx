@@ -69,7 +69,7 @@ const TabList = memo(({ tabs, activeTab, setActiveTab }) => (
 const TabPanel = ({ children, active }) => {
   return (
     <div
-      className="mt-14 w-[96.3vw] h-[95vh] md:h-[92vh]  md:left-14"
+      className="mt-14 py-2 w-[96.3vw] h-[95vh] md:h-[92vh]  md:left-14"
       role="tabpanel"
       hidden={!active}
       id={`panel-${children}`}

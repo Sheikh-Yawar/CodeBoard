@@ -119,8 +119,8 @@ function EditorPage() {
           setEditorContent(roomData.code);
         }
 
-        if (roomData && roomData.canvasData.length > 0) {
-          setCanvasData(roomData.canvasData);
+        if (roomData && roomData.text.length > 0) {
+          setTextContent(roomData.text);
         }
         if (roomData && roomData.messages.length > 0) {
           setMessages(roomData.messages);
@@ -217,7 +217,7 @@ function EditorPage() {
             }),
           ]}
           theme={themes[settingsContext.settings.theme]}
-          height={"90vh"}
+          height={window.innerWidth < 768 ? "83vh" : "90vh"}
           width="96.3vw"
           style={{ fontSize: "20px" }}
         />

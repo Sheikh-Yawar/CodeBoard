@@ -148,14 +148,24 @@ io.on("connection", (socket) => {
 });
 
 app.post("/analyze-image", async (req, res) => {
-  const { file } = req.files;
-  const result = await analyzeImage(file);
-  res.json(result);
+  try {
+    const { file } = req.files;
+    const result = await analyzeImage(file);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: "Error Analyzing Image" });
+    console.error("Error Analyzing Image:", error);
+  }
 });
 app.post("/generate-content", async (req, res) => {
-  const { userInstructions } = req.body;
-  const result = await generateContent(userInstructions);
-  res.json(result);
+  try {
+    const { userInstructions } = req.body;
+    const result = await generateContent(userInstructions);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: "Error generating content" });
+    console.error("Error generating content:", error);
+  }
 });
 
 const PORT = process.env.PORT || 3000;
