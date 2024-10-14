@@ -155,7 +155,6 @@ function EditorPage() {
       // Handle cursor updates from other users
       socketRef.current.on(ACTIONS.CURSOR_UPDATE, (roomData) => {
         console.log("Room data is", roomData);
-        updateCursors();
       });
 
       // Listening for message
