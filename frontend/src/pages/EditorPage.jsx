@@ -2,18 +2,13 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useBlocker, useLocation, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { SettingsContext } from "../../context/SettingsContext";
-import CodeMirror from "@uiw/react-codemirror";
-import * as themes from "@uiw/codemirror-themes-all";
-import { loadLanguage } from "@uiw/codemirror-extensions-langs";
-import { EditorView } from "@uiw/react-codemirror";
-import { color } from "@uiw/codemirror-extensions-color";
-import { hyperLink } from "@uiw/codemirror-extensions-hyper-link";
 import { initSocket } from "../socket";
 import ACTIONS from "../Actions";
 import Canvas from "../Components/Canvas";
 import NameModal from "../Components/NameModal";
 import Tabs from "../Components/Tabs";
 import TextEditor from "../Components/TextEditor";
+import CodeEditor from "../Components/CodeEditor";
 
 function EditorPage() {
   const socketRef = useRef(null);
@@ -31,41 +26,13 @@ function EditorPage() {
   const settingsContext = useContext(SettingsContext);
   const location = useLocation();
   const { roomId } = useParams();
-  const [editorContent, setEditorContent] = useState("");
+  const [codeEditorContent, setCodeEditorContent] = useState("");
+  const [codeEditorOutput, setCodeEditorOutput] = useState([]);
+
   const [textContent, setTextContent] = useState("");
   const [clients, setClients] = useState([]);
   const [messages, setMessages] = useState([]);
-  const cursors = useRef([
-    {
-      socketId: "d7MabZNqs1lc2_qAAAAN",
-      username: "nacheez",
-      cursorColor: "#D6AF25",
-      cursorData: { line: 4, ch: 0 },
-    },
-    {
-      socketId: "OqrRzrwY4uKf7j3dAAAQ",
-      username: "Yawar",
-      cursorColor: "#6B5532",
-      cursorData: { line: 1, ch: 0 },
-    },
-    {
-      socketId: "pwrdzQzYjl5ayArIAAAR",
-      username: "Kratos",
-      cursorColor: "#77AE9F",
-      cursorData: { line: 2, ch: 10 },
-    },
-    {
-      socketId: "4d9mwDmm7-Fy22y3AAAT",
-      username: "Yawar",
-      cursorColor: "#E87D44",
-      cursorData: { line: 1, ch: 19 },
-    },
-  ]);
-
-  const handleEditorChange = (value) => {
-    socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code: value });
-    setEditorContent(value);
-  };
+  let [pistonSupportedRuntimes, setPistonSupportedRuntimes] = useState([]);
 
   useEffect(() => {
     if (
@@ -88,7 +55,6 @@ function EditorPage() {
 
       settingsContext.updateSettings("userName", currentUsername);
       settingsContext.updateSettings("roomId", roomId);
-      settingsContext.updateSettings("language", "javascript");
       socketRef.current = await initSocket();
       socketRef.current.on("connect_error", (err) => handleErrors(err));
       socketRef.current.on("connect_failed", (err) => handleErrors(err));
@@ -123,7 +89,7 @@ function EditorPage() {
       // Listening for code change
       socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
         if (code !== null) {
-          setEditorContent(code);
+          setCodeEditorContent(code);
         }
       });
       // Listening for Text changes
@@ -138,7 +104,7 @@ function EditorPage() {
           console.log(roomData);
         }
         if (roomData && roomData.code !== null) {
-          setEditorContent(roomData.code);
+          setCodeEditorContent(roomData.code);
         }
 
         if (roomData && roomData.text.length > 0) {
@@ -191,7 +157,21 @@ function EditorPage() {
         );
       });
     }
+
+    async function getAllRuntimes() {
+      try {
+        const response = await fetch("https://emkc.org/api/v2/piston/runtimes");
+        const data = await response.json();
+        setPistonSupportedRuntimes([...data]);
+      } catch (e) {
+        console.log("Error in getting all runtimes", e);
+        toast.error(
+          "Error in getting all runtimes. Please don't try to execute code now."
+        );
+      }
+    }
     init();
+    getAllRuntimes();
     return () => {
       socketRef.current.disconnect();
       socketRef.current.off(ACTIONS.JOINED);
@@ -220,48 +200,113 @@ function EditorPage() {
 
   useBlocker(blocker);
 
+  function findMatches(searchTerm) {
+    const matches = [];
+
+    pistonSupportedRuntimes.forEach((item) => {
+      if (
+        item.language.toLowerCase() === searchTerm.toLowerCase() ||
+        item.aliases.some(
+          (alias) => alias.toLowerCase() === searchTerm.toLowerCase()
+        )
+      ) {
+        matches.push(item);
+      }
+    });
+
+    return matches;
+  }
+
+  // Helper function to compare version strings
+  function compareVersions(versionA, versionB) {
+    const versionArrayA = versionA.split(".").map(Number);
+    const versionArrayB = versionB.split(".").map(Number);
+
+    for (
+      let i = 0;
+      i < Math.max(versionArrayA.length, versionArrayB.length);
+      i++
+    ) {
+      const numA = versionArrayA[i] || 0; // If undefined, treat as 0
+      const numB = versionArrayB[i] || 0;
+
+      if (numA > numB) return 1;
+      if (numA < numB) return -1;
+    }
+
+    return 0; // Versions are equal
+  }
+
+  const runCode = async () => {
+    if (codeEditorContent === "") {
+      toast("Please enter some code to execute.", { icon: "🥲" });
+      return;
+    }
+    const matches = findMatches(settingsContext.settings.language);
+    if (matches.length === 0) {
+      toast.error("Cannot execute your code. Please select a valid language.");
+      return;
+    }
+
+    const highestVersion = matches.sort((a, b) => {
+      // Compare the version strings
+      return compareVersions(b.version, a.version);
+    });
+
+    try {
+      console.log("Request send");
+      const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          language: highestVersion[0].language,
+          version: highestVersion[0].version,
+          files: [
+            {
+              content: codeEditorContent,
+            },
+          ],
+        }),
+      });
+
+      const result = await response.json();
+      console.log("Code execution result", result);
+      const timestamp = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+      });
+
+      const processedOutput = result.run.output.replace(/\\n/g, "\n");
+      setCodeEditorOutput((prevEntries) => [
+        {
+          output: processedOutput,
+          timestamp,
+          error: result.run.code === 1 ? true : false,
+        },
+        ...prevEntries,
+      ]);
+    } catch (error) {
+      toast.error("Error executing code. Please try again.");
+      console.error("Error executing code:", error);
+    }
+  };
+
   const tabsData = [
     {
       label: "Code Editor",
       content: (
-        <CodeMirror
-          ref={codeEditorRef}
-          value={editorContent}
-          onChange={handleEditorChange}
-          extensions={[
-            loadLanguage(settingsContext.settings.language),
-            color,
-            hyperLink,
-            EditorView.lineWrapping,
-            EditorView.updateListener.of((update) => {
-              if (update.docChanged) {
-                const view = update.view;
-
-                // Scroll to the bottom after changes
-                view.dispatch({
-                  effects: EditorView.scrollIntoView(view.state.doc.length),
-                });
-                // Get the current cursor position
-                const cursorPos = update.state.selection.main.head; // Main cursor position
-                const lineInfo = update.state.doc.lineAt(cursorPos);
-
-                // Prepare data to send to server
-                const cursorData = {
-                  line: lineInfo.number,
-                  ch: cursorPos - lineInfo.from,
-                };
-
-                socketRef.current.emit(ACTIONS.CURSOR_UPDATE, {
-                  roomId,
-                  cursorData,
-                });
-              }
-            }),
-          ]}
-          theme={themes[settingsContext.settings.theme]}
-          height={window.innerWidth < 768 ? "83vh" : "90vh"}
-          width="96.3vw"
-          style={{ fontSize: "20px" }}
+        <CodeEditor
+          codeEditorRef={codeEditorRef}
+          socketRef={socketRef}
+          roomId={roomId}
+          codeEditorContent={codeEditorContent}
+          setCodeEditorContent={setCodeEditorContent}
+          codeEditorOutput={codeEditorOutput}
+          setCodeEditorOutput={setCodeEditorOutput}
         />
       ),
     },
@@ -303,6 +348,8 @@ function EditorPage() {
         setIsLoadingImg={setIsLoadingImg}
         isLoadingContent={isLoadingContent}
         setIsLoadingContent={setIsLoadingContent}
+        pistonSupportedRuntimes={pistonSupportedRuntimes}
+        runCode={runCode}
       />
     </div>
   );

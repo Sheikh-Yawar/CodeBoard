@@ -79,7 +79,6 @@ io.on("connection", (socket) => {
 
   socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
     const clients = getAllConnectedClients(roomId);
-    console.log("Clients", clients);
     //Send to all users except the sender
     roomData[roomId] = { ...roomData[roomId], code };
     socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });

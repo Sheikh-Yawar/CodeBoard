@@ -24,5 +24,5 @@ export const initSocket = async () => {
     randomizationFactor: 0.5, // Randomization factor for reconnection delay
   };
 
-  return io(getServerUrl(), options);
+  return io("http://127.0.0.1:3000", options);
 };

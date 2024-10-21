@@ -2,12 +2,6 @@ import { useContext, useState } from "react";
 import toast from "react-hot-toast";
 import { exportToBlob } from "tldraw";
 import { SettingsContext } from "../../context/SettingsContext";
-import CodeMirror, { lineNumbers } from "@uiw/react-codemirror";
-import * as themes from "@uiw/codemirror-themes-all";
-import { loadLanguage } from "@uiw/codemirror-extensions-langs";
-import { EditorView } from "@uiw/react-codemirror";
-import { color } from "@uiw/codemirror-extensions-color";
-import { hyperLink } from "@uiw/codemirror-extensions-hyper-link";
 import copy from "copy-to-clipboard";
 import TextareaAutosize from "react-textarea-autosize";
 const serverURL = import.meta.env.VITE_SERVER_URL;
@@ -383,7 +377,7 @@ function ContentGenerationResult({ resultObj, timestamp }) {
             <div className="cursor-pointer text-end" onClick={handleCopyCode}>
               {isCopiedCode ? "Copied!" : "Copy"}
             </div>
-            <CodeMirror
+            {/* <CodeMirror
               value={resultObj.code}
               options={{ lineNumbers: false }}
               extensions={[
@@ -405,7 +399,7 @@ function ContentGenerationResult({ resultObj, timestamp }) {
               ]}
               theme={themes[settingsContext.settings.theme]}
               style={{ fontSize: "20px" }}
-            />
+            /> */}
           </div>
         )}
         {resultObj.content.length > 0 && (

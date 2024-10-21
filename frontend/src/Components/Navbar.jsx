@@ -1,14 +1,14 @@
 import { MdOutlineChat } from "react-icons/md";
 import { LiaUserFriendsSolid } from "react-icons/lia";
 import { IoSettingsOutline } from "react-icons/io5";
-import { LuPencilLine } from "react-icons/lu";
-import { FaCode } from "react-icons/fa";
+import { FaPlay } from "react-icons/fa";
 import { RiRobot3Fill } from "react-icons/ri";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import ViewMembers from "./ViewMembers";
 import Chat from "./Chat";
 import Settings from "./Settings";
 import CodeBoardBot from "./CodeBoardBot";
+import { SettingsContext } from "../../context/SettingsContext";
 function Navbar({
   socketRef,
   editorRef,
@@ -21,7 +21,10 @@ function Navbar({
   setIsLoadingImg,
   isLoadingContent,
   setIsLoadingContent,
+  pistonSupportedRuntimes,
+  runCode,
 }) {
+  const settingsContext = useContext(SettingsContext);
   const [showSidebar, setShowSidebar] = useState(false);
   const [lastClickedIcon, setLastClickedIcon] = useState("code");
 
@@ -63,10 +66,22 @@ function Navbar({
       setLastClickedIcon(icon);
     }
   }
+  function handleRunCodeClick() {
+    setShowSidebar(false);
+    runCode();
+    settingsContext.updateSettings("showTerminal", true);
+  }
 
   return (
     <div className="flex">
       <div className="fixed bottom-0 left-0 z-50 flex items-center h-[50px] w-full gap-10 px-5 bg-tabbar md:static md:h-screen md:w-[50px] md:pt-14 md:min-w-[50px] md:flex-col md:p-2 cursor-pointer text-[#89919d]">
+        <FaPlay
+          title="Run Code"
+          className={`${
+            settingsContext.settings.enableRunButton && "text-white scale-[2]"
+          } scale-[1.6] `}
+          onClick={() => handleRunCodeClick()}
+        />
         <RiRobot3Fill
           title="Ask CodeBoardBot for help"
           className={`${
@@ -113,7 +128,12 @@ function Navbar({
             setIsLoadingContent={setIsLoadingContent}
           />
         )}
-        {lastClickedIcon === "settings" && <Settings socketRef={socketRef} />}
+        {lastClickedIcon === "settings" && (
+          <Settings
+            socketRef={socketRef}
+            pistonSupportedRuntimes={pistonSupportedRuntimes}
+          />
+        )}
         {lastClickedIcon === "viewmembers" && <ViewMembers clients={clients} />}
         {lastClickedIcon === "chat" && (
           <Chat socketRef={socketRef} messagesArray={messages} />

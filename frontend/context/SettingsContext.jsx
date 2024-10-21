@@ -5,9 +5,11 @@ export const SettingsContext = createContext();
 export function SettingsProvider({ children }) {
   const defaultSettings = {
     language: "javascript",
-    theme: "vscodeDark",
+    theme: "vs-dark",
     username: "",
     roomId: "",
+    showTerminal: false,
+    enableRunButton: false,
   };
   const [settings, setSettings] = useState(defaultSettings);
   const updateSettings = (key, value) => {

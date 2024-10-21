@@ -13,6 +13,8 @@ const Tabs = ({
   setIsLoadingImg,
   isLoadingContent,
   setIsLoadingContent,
+  pistonSupportedRuntimes,
+  runCode,
 }) => {
   const [activeTab, setActiveTab] = useState(0);
 
@@ -32,6 +34,8 @@ const Tabs = ({
           setIsLoadingImg={setIsLoadingImg}
           isLoadingContent={isLoadingContent}
           setIsLoadingContent={setIsLoadingContent}
+          pistonSupportedRuntimes={pistonSupportedRuntimes}
+          runCode={runCode}
         />
 
         {tabs.map((tab, index) => (
