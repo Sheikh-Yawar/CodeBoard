@@ -2,47 +2,72 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import { OrbitingCirclesCodeBoard } from "../Components/External Components/OrbitingCircles/OrbitingCirclesCodeBoard.jsx";
+import { ShimmerButtonCodeBoard } from "../Components/External Components/ShimmerButton/ShimmerButtonCodeBoard.jsx";
+import { TypewriterEffect } from "../Components/External Components/TypeWriter/TypewriterEffect.tsx";
+import { RoomForm } from "../Components/RoomForm.jsx";
+import { AnimatePresence, motion } from "framer-motion";
+import { ParticlesBackground } from "../Components/External Components/Particles/ParticlesBackground.jsx";
 
 function HomePage() {
+  const words = [
+    {
+      text: "Your",
+    },
+    {
+      text: "space",
+    },
+    {
+      text: "to",
+    },
+    {
+      text: "code,",
+      className: "text-userPrimary dark:text-userPrimary",
+    },
+    {
+      text: "write,",
+      className: "text-userPrimary dark:text-userPrimary",
+    },
+    {
+      text: "and",
+    },
+    {
+      text: "create",
+      className: "text-userPrimary dark:text-userPrimary",
+    },
+    {
+      text: "together",
+    },
+  ];
   const navigate = useNavigate();
-  const [createRoom, setCreateRoom] = useState(false);
+  const [showRoomForm, setShowRoomForm] = useState(false);
+  const [error, setError] = useState("");
   const [roomId, setRoomId] = useState("");
-  const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
 
   const removeSpaces = (roomName) => {
     return roomName.replace(/\s/g, "");
   };
 
-  const handleEnterClick = (e) => {
-    if (e.code === "Enter") {
-      handleFormSubmit();
-    }
-  };
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
+  const handleFormSubmit = () => {
     if (!roomId) {
-      toast.error("Please Enter Room Id.", {});
+      setError("Please Enter Room Id.");
       return;
     }
-    if (!username) {
-      toast.error("Please Enter Username.", {});
+    if (!firstName) {
+      setError("Please Enter First Name.");
       return;
     }
 
     if (removeSpaces(roomId).length < 5) {
-      toast.error("Room Id cannot be less than 5 characters excluding spaces.");
-      return;
-    }
-    if (removeSpaces(username).length < 5) {
-      toast.error(
-        "Username cannot be less than 5 characters excluding spaces."
-      );
+      setError("Room Id cannot be less than 5 characters excluding spaces.");
       return;
     }
 
     navigate(`/editor/${removeSpaces(roomId)}`, {
       state: {
-        username: username.trim(),
+        username: firstName.trim() + " " + lastName.trim(),
       },
     });
   };
@@ -54,67 +79,59 @@ function HomePage() {
   });
 
   return (
-    <div className="min-h-screen px-4 text-white pt-14 md:flex md:justify-around md:items-center md:gap-8">
-      <div className="pb-5 md:w-1/2 md:pb-0 ">
-        <img src="../../images/homePageImage.svg" />
-      </div>
-      <div>
-        <p className="text-3xl md:text-[45px] lg:text-[50px] text-center font-Workbench pb-2">
-          CodeBoard
-        </p>
-        <p className=" text-[15px] md:text-xl lg:text-[20px] text-center">
-          The collaborative coding & brainstorming platform.
-        </p>
+    <>
+      {!showRoomForm && (
+        <div className="flex flex-col w-screen h-screen gap-8 lg:justify-evenly lg:flex-row bg-background font-Montserrat">
+          <OrbitingCirclesCodeBoard className="h-[55%] lg:h-full" />
 
-        <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 pt-5">
-          <input
-            className="bg-secondary border-[#89919d] border-[1px] rounded py-2 text-xl font-bold px-2 outline-none placeholder:font-normal"
-            value={roomId}
-            type="text"
-            placeholder="Room Id"
-            onChange={(e) => setRoomId(e.target.value)}
-            onKeyUp={handleEnterClick}
-          />
-          <input
-            className="bg-secondary border-[#89919d] border-[1px] rounded py-2 text-xl font-bold px-2 outline-none placeholder:font-normal"
-            value={username}
-            type="text"
-            placeholder="Username"
-            onChange={(e) => setUsername(e.target.value)}
-            onKeyUp={handleEnterClick}
-          />
-          <button className="py-2 text-xl rounded bg-primary" type="submit">
-            {createRoom ? "Create" : "Join"}
-          </button>
-        </form>
-        <div>
-          {!createRoom ? (
-            <p
-              onClick={() => {
-                setRoomId(uuidv4());
-                setCreateRoom(true);
-                toast("New Room Created", {
-                  icon: "🚀",
-                });
-              }}
-              className="text-[16px] text-center  underline cursor-pointer py-4"
-            >
-              Create Room
-            </p>
-          ) : (
-            <p
-              onClick={() => {
-                setRoomId("");
-                setCreateRoom(false);
-              }}
-              className="text-[16px] text-center pt-4 underline cursor-pointer"
-            >
-              Join Room
-            </p>
-          )}
+          <div className="flex flex-col items-center px-4 lg:justify-center">
+            <>
+              <TypewriterEffect
+                words={words}
+                cursorClassName="bg-userPrimary"
+              />
+              <div className="flex gap-2 pt-5 md:gap-5">
+                <ShimmerButtonCodeBoard
+                  buttonLabel="Start Collaboration"
+                  handleClick={() => setShowRoomForm(true)}
+                />
+                <ShimmerButtonCodeBoard
+                  buttonLabel="Go Solo"
+                  handleClick={() => console.log("Go Solo")}
+                />
+              </div>
+            </>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      {showRoomForm && (
+        <ParticlesBackground>
+          <div className="absolute top-[15%] left-1/2 transform -translate-x-1/2 max-w-xl w-full px-4">
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+              >
+                <RoomForm
+                  roomId={roomId}
+                  setRoomId={setRoomId}
+                  firstName={firstName}
+                  setFirstName={setFirstName}
+                  lastName={lastName}
+                  setLastName={setLastName}
+                  error={error}
+                  setError={setError}
+                  handleFormSubmit={handleFormSubmit}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </ParticlesBackground>
+      )}
+    </>
   );
 }
 

@@ -20,7 +20,7 @@ function App() {
     },
   ]);
   return (
-    <div className="min-h-screen text-white min-w-screen bg-background font-Montserrat ">
+    <div className="min-h-screen text-white dark min-w-screen font-Montserrat ">
       <SettingsProvider>
         <RouterProvider router={router} />
       </SettingsProvider>
