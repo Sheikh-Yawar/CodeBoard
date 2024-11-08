@@ -1,22 +1,21 @@
+import { cn } from "../../lib/utils";
+import { Input } from "./External Components/RoomCreationForm/Input";
 import { IoMdSend } from "react-icons/io";
 import Message from "./Message";
 import { useContext, useEffect, useRef, useState } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
 import ACTIONS from "../Actions";
+
 function Chat({ socketRef, messagesArray }) {
   const [message, setMessage] = useState("");
   const settingsContext = useContext(SettingsContext);
-
-  const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
+  const messagesContainerRef = useRef(null); // Use a ref for the container
 
   useEffect(() => {
-    scrollToBottom();
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight; // Scroll to the bottom
+    }
   }, [messagesArray]);
 
   const handleMessageSubmit = (e) => {
@@ -30,9 +29,12 @@ function Chat({ socketRef, messagesArray }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-[92vh] md:h-[96vh] p-2 ">
-      <div className="pb-2 text-xl font-bold">Group Chat</div>
-      <div className="flex flex-col flex-1 gap-5 overflow-auto ">
+    <div className="flex flex-col w-full h-full min-h-0 pr-3">
+      <div className="pb-2 text-xl font-bol">Group Chat</div>
+      <div
+        ref={messagesContainerRef} // Add the ref to the container
+        className="flex flex-col flex-grow gap-5 overflow-auto max-h-[calc(100vh-10rem)] mb-5"
+      >
         {messagesArray.length > 0 &&
           messagesArray.map((message) => (
             <Message
@@ -42,20 +44,20 @@ function Chat({ socketRef, messagesArray }) {
               timestamp={message.timestamp}
             />
           ))}
-        <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={handleMessageSubmit} className="flex mt-2 ">
-        <input
-          value={message}
-          type="text"
-          className="w-full bg-[#3d404a] border-[#89919d] border-[1px] rounded-l text-xl py-1 px-2 outline-none"
-          placeholder="Enter Message"
-          onChange={(e) => setMessage(e.target.value)}
-        />
-
+      <form onSubmit={handleMessageSubmit} className="flex">
+        <LabelInputContainer className="">
+          <Input
+            value={message}
+            placeholder="Enter Message"
+            type="text"
+            className="px-2 py-1 text-[15px] rounded-l"
+            onChange={(e) => setMessage(e.target.value)}
+          />
+        </LabelInputContainer>
         <button
           type="submit"
-          className="px-4 py-2 text-2xl rounded-r bg-primary"
+          className="px-2 text-3xl text-[#89919d] hover:text-white "
         >
           <IoMdSend />
         </button>
@@ -63,5 +65,12 @@ function Chat({ socketRef, messagesArray }) {
     </div>
   );
 }
+const LabelInputContainer = ({ children, className }) => {
+  return (
+    <div className={cn("flex flex-col space-y-2 w-full", className)}>
+      {children}
+    </div>
+  );
+};
 
 export default Chat;

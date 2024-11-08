@@ -6,10 +6,8 @@ import { Input } from "./External Components/RoomCreationForm/Input";
 export function RoomForm({
   roomId,
   setRoomId,
-  firstName,
-  setFirstName,
-  lastName,
-  setLastName,
+  username,
+  setUsername,
   error,
   handleFormSubmit,
 }) {
@@ -21,34 +19,19 @@ export function RoomForm({
   return (
     <div className="w-full max-w-md p-4 mx-auto bg-white rounded-2xl md:p-8 shadow-input dark:bg-black">
       <form className="my-8" onSubmit={handleSubmit}>
-        <div className="flex flex-col mb-4 space-y-2 md:flex-row md:space-y-0 md:space-x-2">
-          <LabelInputContainer>
-            <Label htmlFor="firstname">First name</Label>
-            <Input
-              id="firstname"
-              placeholder="Tyler"
-              type="text"
-              value={firstName}
-              onChange={(e) => {
-                if (e.target.value.length > 10) return;
-                setFirstName(e.target.value);
-              }}
-            />
-          </LabelInputContainer>
-          <LabelInputContainer>
-            <Label htmlFor="lastname">Last name</Label>
-            <Input
-              id="lastname"
-              placeholder="Durden"
-              type="text"
-              value={lastName}
-              onChange={(e) => {
-                if (e.target.value.length > 10) return;
-                setLastName(e.target.value);
-              }}
-            />
-          </LabelInputContainer>
-        </div>
+        <LabelInputContainer className="mb-4">
+          <Label htmlFor="username">Username</Label>
+          <Input
+            id="username"
+            placeholder="Tyler"
+            type="text"
+            value={username}
+            onChange={(e) => {
+              if (e.target.value.length > 20) return;
+              setUsername(e.target.value);
+            }}
+          />
+        </LabelInputContainer>
         <LabelInputContainer className="mb-4">
           <Label htmlFor="text">Room ID</Label>
           <Input
@@ -83,7 +66,16 @@ export function RoomForm({
         <div className="text-sm text-center text-gray-500">
           If the room id exisits, you will be redirected to the room. Otherwise
           a new room will be created or
-          <span className="font-bold cursor-pointer text-userPrimary hover:underline">
+          <span
+            onClick={() =>
+              navigate(`/editor/${uuidv4()}`, {
+                state: {
+                  solo: true,
+                },
+              })
+            }
+            className="font-bold cursor-pointer text-userPrimary hover:underline"
+          >
             {" "}
             Go&nbsp;Solo?
           </span>

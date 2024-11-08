@@ -8,8 +8,6 @@ export function SettingsProvider({ children }) {
     theme: "vs-dark",
     username: "",
     roomId: "",
-    showTerminal: false,
-    enableRunButton: false,
   };
   const [settings, setSettings] = useState(defaultSettings);
   const updateSettings = (key, value) => {

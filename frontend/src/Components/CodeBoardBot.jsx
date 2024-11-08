@@ -201,7 +201,7 @@ const CodeBoardBot = ({
     setIsLoadingContent(false);
   }
   return (
-    <div className="p-3 text-[13px] text-gray-300 h-[98vh] ">
+    <div className="pr-3 text-[13px] text-gray-300  dark:bg-black ">
       {activeTab === 1 ? (
         <div>
           <div>

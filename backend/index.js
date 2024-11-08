@@ -61,7 +61,6 @@ io.on("connection", (socket) => {
       roomData[roomId] = {
         code,
         messages: [],
-        selectedLanguage: "",
         text: "",
       };
     }
@@ -78,7 +77,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
-    const clients = getAllConnectedClients(roomId);
     //Send to all users except the sender
     roomData[roomId] = { ...roomData[roomId], code };
     socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
@@ -116,19 +114,6 @@ io.on("connection", (socket) => {
       id: Date.now(),
       username: userSocketMap[socket.id],
       timestamp: generateTimeStamp(),
-    });
-  });
-
-  socket.on(ACTIONS.LANGUAGE_CHANGE, ({ roomId, username, language }) => {
-    if (roomData[roomId]) {
-      roomData[roomId] = {
-        ...roomData[roomId],
-        selectedLanguage: language,
-      };
-    }
-    socket.in(roomId).emit(ACTIONS.LANGUAGE_CHANGE, {
-      username,
-      language,
     });
   });
 

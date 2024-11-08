@@ -11,6 +11,10 @@ function App() {
       element: <HomePage />,
     },
     {
+      path: "/editor",
+      element: <EditorPage />,
+    },
+    {
       path: "/editor/:roomId",
       element: <EditorPage />,
     },
@@ -29,7 +33,7 @@ function App() {
         toastOptions={{
           duration: 2000,
           style: {
-            background: "#3d404a",
+            background: "#272729",
             color: "white",
           },
         }}

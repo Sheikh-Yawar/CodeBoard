@@ -43,7 +43,7 @@ export default function TextEditor({ socketRef, textContent, setTextContent }) {
 
   return (
     <BlockNoteView
-      className="w-full h-full pt-1 overflow-auto"
+      className="w-full h-full pt-1 overflow-auto bg-[#1e1e1e]"
       editor={editor}
       onChange={handleTextEditorChange}
     />

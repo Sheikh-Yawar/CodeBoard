@@ -1,5 +1,7 @@
 import { useState, memo } from "react";
-import Navbar from "./Navbar";
+import Sidebar from "./Sidebar";
+
+import { Tabbar } from "./External Components/Tabbar/Tabbar";
 
 const Tabs = ({
   tabs,
@@ -14,15 +16,22 @@ const Tabs = ({
   isLoadingContent,
   setIsLoadingContent,
   pistonSupportedRuntimes,
-  runCode,
+  isSolo,
+  setOpenCollaborationPopup,
 }) => {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <div className="w-screen h-screen">
-      <TabList tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="flex w-full h-full">
-        <Navbar
+    <div className="relative w-screen h-screen bg-[#1e1e1e] flex flex-col">
+      <Tabbar
+        navItems={tabs}
+        activeTab={activeTab}
+        onClick={(idx) => setActiveTab(idx)}
+      />
+
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          className="w-[50px] h-full"
           clients={clients}
           socketRef={socketRef}
           editorRef={editorRef}
@@ -35,48 +44,29 @@ const Tabs = ({
           isLoadingContent={isLoadingContent}
           setIsLoadingContent={setIsLoadingContent}
           pistonSupportedRuntimes={pistonSupportedRuntimes}
-          runCode={runCode}
+          isSolo={isSolo}
+          setOpenCollaborationPopup={setOpenCollaborationPopup}
         />
 
-        {tabs.map((tab, index) => (
-          <TabPanel key={index} active={activeTab === index}>
-            {tab.content}
-          </TabPanel>
-        ))}
+        <div className="flex-1 overflow-auto">
+          {tabs.map((tab, index) => (
+            <TabPanel key={index} active={activeTab === index}>
+              {tab.content}
+            </TabPanel>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
 
-const TabList = memo(({ tabs, activeTab, setActiveTab }) => (
-  <div className="fixed top-0 z-10 flex justify-center w-screen gap-10 bg-tabbar">
-    {tabs.map((tab, index) => (
-      <button
-        key={index}
-        className={`h-12 transition-colors duration-500 ${
-          activeTab === index
-            ? "border-b-2 border-primary text-primary font-semibold"
-            : "text-gray-500"
-        }`}
-        onClick={() => setActiveTab(index)}
-        aria-selected={activeTab === index}
-        role="tab"
-        id={`tab-${index}`}
-        aria-controls={`panel-${index}`}
-      >
-        {tab.label}
-      </button>
-    ))}
-  </div>
-));
-
 const TabPanel = ({ children, active }) => {
   return (
     <div
-      className="mt-14 py-2 w-[96.3vw] h-[95vh] md:h-[92vh]  md:left-14"
       role="tabpanel"
       hidden={!active}
       id={`panel-${children}`}
+      className={`h-full overflow-y-auto ${active ? "block" : "hidden"}`} // Apply necessary classes for height and overflow
     >
       {active && children}
     </div>

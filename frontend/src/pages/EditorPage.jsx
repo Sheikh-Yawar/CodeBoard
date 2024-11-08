@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useBlocker, useLocation, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { toast } from "react-hot-toast";
 import { SettingsContext } from "../../context/SettingsContext";
 import { initSocket } from "../socket";
@@ -13,10 +14,12 @@ import CodeEditor from "../Components/CodeEditor";
 function EditorPage() {
   const socketRef = useRef(null);
   const editorRef = useRef(null);
+  const [isSolo, setIsSolo] = useState(true);
   const codeEditorRef = useRef(null);
+  const [openCollaborationPopup, setOpenCollaborationPopup] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
-  const [username, setUsername] = useState("");
+  // const [username, setUsername] = useState("");
   const [codeBoardBotResults, setCodeBoardBotResults] = useState({
     imageAnalysisResult: [],
     contentGenerationResults: [],
@@ -25,16 +28,33 @@ function EditorPage() {
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const settingsContext = useContext(SettingsContext);
   const location = useLocation();
+
+  const [username, setUsername] = useState();
   const { roomId } = useParams();
+
   const [codeEditorContent, setCodeEditorContent] = useState("");
   const [codeEditorOutput, setCodeEditorOutput] = useState([]);
+  const [isCodeExecutionRunning, setIsCodeExecutionRunning] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
 
   const [textContent, setTextContent] = useState("");
   const [clients, setClients] = useState([]);
   const [messages, setMessages] = useState([]);
-  let [pistonSupportedRuntimes, setPistonSupportedRuntimes] = useState([]);
+  const [pistonSupportedRuntimes, setPistonSupportedRuntimes] = useState([]);
+  const [filesData, setFilesData] = useState([
+    {
+      fileName: "script.js",
+      language: "javascript",
+      content: 'console.log("Hello world")',
+      runCodeOption: true,
+    },
+  ]);
 
   useEffect(() => {
+    if (roomId) {
+      setIsSolo(false);
+    }
+
     if (
       !sessionStorage.getItem("currentUsername") &&
       (!location.state || !location.state.username)
@@ -49,11 +69,12 @@ function EditorPage() {
     }
 
     async function init() {
+      console.log("Initializing socket connection...");
       const currentUsername = !location.state
         ? sessionStorage.getItem("currentUsername")
         : location.state.username;
 
-      settingsContext.updateSettings("userName", currentUsername);
+      settingsContext.updateSettings("username", currentUsername);
       settingsContext.updateSettings("roomId", roomId);
       socketRef.current = await initSocket();
       socketRef.current.on("connect_error", (err) => handleErrors(err));
@@ -113,9 +134,6 @@ function EditorPage() {
         if (roomData && roomData.messages.length > 0) {
           setMessages(roomData.messages);
         }
-        if (roomData && roomData.selectedLanguage.length > 0) {
-          settingsContext.updateSettings("language", roomData.selectedLanguage);
-        }
       });
 
       // Handle cursor updates from other users
@@ -140,13 +158,6 @@ function EditorPage() {
         }
       );
 
-      socketRef.current.on(
-        ACTIONS.LANGUAGE_CHANGE,
-        ({ username, language }) => {
-          settingsContext.updateSettings("language", language);
-        }
-      );
-
       // Listening for disconnected
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
         toast(`${username} left the room.`, {
@@ -162,6 +173,7 @@ function EditorPage() {
       try {
         const response = await fetch("https://emkc.org/api/v2/piston/runtimes");
         const data = await response.json();
+        console.log("Data is", data);
         setPistonSupportedRuntimes([...data]);
       } catch (e) {
         console.log("Error in getting all runtimes", e);
@@ -170,14 +182,19 @@ function EditorPage() {
         );
       }
     }
-    init();
-    getAllRuntimes();
+
+    if (!isSolo) {
+      init();
+    }
+    // getAllRuntimes();
     return () => {
-      socketRef.current.disconnect();
-      socketRef.current.off(ACTIONS.JOINED);
-      socketRef.current.off(ACTIONS.DISCONNECTED);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current.off(ACTIONS.JOINED);
+        socketRef.current.off(ACTIONS.DISCONNECTED);
+      }
     };
-  }, [username]);
+  }, [username, isSolo]);
 
   function handleModalJoinClick(username) {
     if (username.length < 5 || username.length > 20) {
@@ -216,7 +233,6 @@ function EditorPage() {
 
     return matches;
   }
-
   // Helper function to compare version strings
   function compareVersions(versionA, versionB) {
     const versionArrayA = versionA.split(".").map(Number);
@@ -237,12 +253,10 @@ function EditorPage() {
     return 0; // Versions are equal
   }
 
-  const runCode = async () => {
-    if (codeEditorContent === "") {
-      toast("Please enter some code to execute.", { icon: "🥲" });
-      return;
-    }
-    const matches = findMatches(settingsContext.settings.language);
+  const runCode = async (language, code) => {
+    if (isCodeExecutionRunning) return;
+
+    const matches = findMatches(language);
     if (matches.length === 0) {
       toast.error("Cannot execute your code. Please select a valid language.");
       return;
@@ -254,7 +268,6 @@ function EditorPage() {
     });
 
     try {
-      console.log("Request send");
       const response = await fetch("https://emkc.org/api/v2/piston/execute", {
         method: "POST",
         headers: {
@@ -265,7 +278,7 @@ function EditorPage() {
           version: highestVersion[0].version,
           files: [
             {
-              content: codeEditorContent,
+              content: code,
             },
           ],
         }),
@@ -289,6 +302,8 @@ function EditorPage() {
         },
         ...prevEntries,
       ]);
+      setIsCodeExecutionRunning(false);
+      setShowTerminal(true);
     } catch (error) {
       toast.error("Error executing code. Please try again.");
       console.error("Error executing code:", error);
@@ -307,6 +322,15 @@ function EditorPage() {
           setCodeEditorContent={setCodeEditorContent}
           codeEditorOutput={codeEditorOutput}
           setCodeEditorOutput={setCodeEditorOutput}
+          pistonSupportedRuntimes={pistonSupportedRuntimes}
+          filesData={filesData}
+          setFilesData={setFilesData}
+          runCode={runCode}
+          showTerminal={showTerminal}
+          setShowTerminal={setShowTerminal}
+          isCodeExecutionRunning={isCodeExecutionRunning}
+          openCollaborationPopup={openCollaborationPopup}
+          setOpenCollaborationPopup={setOpenCollaborationPopup}
         />
       ),
     },
@@ -334,8 +358,21 @@ function EditorPage() {
 
   return (
     <div className="overflow-x-hidden overflow-y-hidden">
-      {showLoader && <CodeboardLoader />}
-      {showModal && <NameModal handleJoinClick={handleModalJoinClick} />}
+      {showLoader && !isSolo && <CodeboardLoader />}
+      {showModal && !isSolo && (
+        <div className="absolute top-0 z-50 w-full h-full overflow-y-hidden opacity-95 bg-white-300 backdrop-blur-sm bg-opacity-10">
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="absolute top-[15%] left-1/3 transform -translate-x-1/2 max-w-xl w-full px-4"
+          >
+            <NameModal handleJoinClick={handleModalJoinClick} />
+          </motion.div>
+        </div>
+      )}
+
       <Tabs
         tabs={tabsData}
         clients={clients}
@@ -349,7 +386,8 @@ function EditorPage() {
         isLoadingContent={isLoadingContent}
         setIsLoadingContent={setIsLoadingContent}
         pistonSupportedRuntimes={pistonSupportedRuntimes}
-        runCode={runCode}
+        isSolo={isSolo}
+        setOpenCollaborationPopup={setOpenCollaborationPopup}
       />
     </div>
   );

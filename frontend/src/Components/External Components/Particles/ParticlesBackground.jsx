@@ -1,8 +1,11 @@
+import { cn } from "../../../../lib/utils";
 import Particles from "./Particles";
 
-export function ParticlesBackground({ children }) {
+export function ParticlesBackground({ children, className }) {
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-background">
+    <div
+      className={cn("relative overflow-hidden bg-background h-10", className)}
+    >
       <Particles
         className="w-full h-full "
         quantity={400}
