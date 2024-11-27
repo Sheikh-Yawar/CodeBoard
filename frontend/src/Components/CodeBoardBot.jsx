@@ -1,4 +1,5 @@
 import { useContext, useState } from "react";
+import Editor from "@monaco-editor/react";
 import toast from "react-hot-toast";
 import { exportToBlob } from "tldraw";
 import { SettingsContext } from "../../context/SettingsContext";
@@ -89,9 +90,9 @@ const CodeBoardBot = ({
       let processedExpr = expr.replace(/\\n/g, "\n").replace(/\\/g, "");
 
       // First, try matching the result as an object
-      let resultObjectMatch = formattedResult.match(
-        /"result":\s*(\{.*?\})\s*}/s
-      );
+      let resultObjectMatch = formattedResult.match(/"result":\s*(\d+)/);
+
+      console.log("Result objecct match is", resultObjectMatch);
       let answer;
 
       if (resultObjectMatch) {
@@ -219,7 +220,7 @@ const CodeBoardBot = ({
             </button>
           </div>
           <div className="w-full h-[1px] bg-gray-300 mt-5 "></div>
-          <div className="h-[73vh] md:h-[79vh] overflow-y-scroll overflow-x-hidden">
+          <div className="h-[73vh] pb-5 md:h-[79vh] overflow-y-scroll overflow-x-hidden">
             <div className="flex flex-col gap-2 mt-5 ">
               {codeBoardBotResults.imageAnalysisResult.length > 0 ? (
                 codeBoardBotResults.imageAnalysisResult.map(
@@ -271,7 +272,7 @@ const CodeBoardBot = ({
             </button>
           </div>
           <div className="w-full h-[1px] bg-gray-300 my-5 "></div>
-          <div className="flex flex-col h-[63vh] md:h-[70vh]  gap-2 overflow-x-hidden overflow-y-scroll">
+          <div className="flex flex-col h-[63vh] md:h-[70vh]  gap-2 overflow-x-hidden overflow-y-scroll pb-5">
             {codeBoardBotResults.contentGenerationResults.length > 0 ? (
               codeBoardBotResults.contentGenerationResults.map(
                 (resultObj, index) => (
@@ -368,44 +369,33 @@ function ContentGenerationResult({ resultObj, timestamp }) {
         <span>{timestamp}</span>
       </div>
       <div className="flex flex-col gap-2">
-        <div className="p-2 rounded bg-tabbar">
+        <div className="py-2 rounded bg-tabbar">
           <span className="pr-2 font-bold">Explanation:</span>
           {resultObj.explanation}
         </div>
         {resultObj.code.length > 0 && (
-          <div className="p-2 rounded bg-tabbar">
+          <div className="py-2 rounded bg-tabbar">
             <div className="cursor-pointer text-end" onClick={handleCopyCode}>
               {isCopiedCode ? "Copied!" : "Copy"}
             </div>
-            {/* <CodeMirror
+            <Editor
+              className="h-[400px]"
+              language="javascript"
+              theme="vs-dark"
               value={resultObj.code}
-              options={{ lineNumbers: false }}
-              extensions={[
-                loadLanguage(settingsContext.settings.language),
-                color,
-                hyperLink,
-
-                EditorView.lineWrapping,
-                EditorView.editable.of(false),
-                EditorView.updateListener.of((update) => {
-                  if (update.docChanged) {
-                    const view = update.view;
-                    // Scroll to the bottom after changes
-                    view.dispatch({
-                      effects: EditorView.scrollIntoView(view.state.doc.length),
-                    });
-                  }
-                }),
-              ]}
-              theme={themes[settingsContext.settings.theme]}
-              style={{ fontSize: "20px" }}
-            /> */}
+              options={{
+                fontSize: 17,
+                wordWrap: "on",
+                formatOnPaste: true,
+                readOnly: true,
+              }}
+            />
           </div>
         )}
         {resultObj.content.length > 0 && (
-          <div className="p-2 rounded bg-tabbar">
+          <div className="p-2 font-medium rounded bg-background">
             <div
-              className="cursor-pointer text-end"
+              className="text-[14px] cursor-pointer text-end"
               onClick={handleCopyContent}
             >
               {isCopiedContent ? "Copied!" : "Copy"}

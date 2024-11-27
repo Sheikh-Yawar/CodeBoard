@@ -1,3 +1,5 @@
+import * as Y from "yjs";
+import { SocketIOProvider } from "y-socket.io";
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useBlocker, useLocation, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,15 +12,18 @@ import NameModal from "../Components/NameModal";
 import Tabs from "../Components/Tabs";
 import TextEditor from "../Components/TextEditor";
 import CodeEditor from "../Components/CodeEditor";
+const serverURL = import.meta.env.VITE_SERVER_URL;
 
 function EditorPage() {
   const socketRef = useRef(null);
   const editorRef = useRef(null);
-  const [isSolo, setIsSolo] = useState(true);
+  const isSoloRef = useRef(true);
+  const docRef = useRef(new Y.Doc());
+  const providerRef = useRef(null);
   const codeEditorRef = useRef(null);
   const [openCollaborationPopup, setOpenCollaborationPopup] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [showLoader, setShowLoader] = useState(true);
+  const [showLoader, setShowLoader] = useState(false);
   // const [username, setUsername] = useState("");
   const [codeBoardBotResults, setCodeBoardBotResults] = useState({
     imageAnalysisResult: [],
@@ -29,7 +34,7 @@ function EditorPage() {
   const settingsContext = useContext(SettingsContext);
   const location = useLocation();
 
-  const [username, setUsername] = useState();
+  const [username, setUsername] = useState("");
   const { roomId } = useParams();
 
   const [codeEditorContent, setCodeEditorContent] = useState("");
@@ -45,14 +50,14 @@ function EditorPage() {
     {
       fileName: "script.js",
       language: "javascript",
-      content: 'console.log("Hello world")',
+      content: "",
       runCodeOption: true,
     },
   ]);
 
   useEffect(() => {
     if (roomId) {
-      setIsSolo(false);
+      isSoloRef.current = false;
     }
 
     if (
@@ -64,7 +69,7 @@ function EditorPage() {
     }
 
     function handleErrors(e) {
-      console.log("Socker Error", e);
+      console.log("Socket Io Error", e);
       setShowLoader(true);
     }
 
@@ -76,6 +81,7 @@ function EditorPage() {
 
       settingsContext.updateSettings("username", currentUsername);
       settingsContext.updateSettings("roomId", roomId);
+      setUsername(currentUsername);
       socketRef.current = await initSocket();
       socketRef.current.on("connect_error", (err) => handleErrors(err));
       socketRef.current.on("connect_failed", (err) => handleErrors(err));
@@ -90,6 +96,15 @@ function EditorPage() {
         username: currentUsername,
       });
 
+      providerRef.current = new SocketIOProvider(
+        serverURL,
+        roomId,
+        docRef.current,
+        {
+          autoConnect: true,
+          gcEnabled: false,
+        }
+      );
       // Listening for joined event
       socketRef.current.on(
         ACTIONS.JOINED,
@@ -136,11 +151,6 @@ function EditorPage() {
         }
       });
 
-      // Handle cursor updates from other users
-      socketRef.current.on(ACTIONS.CURSOR_UPDATE, (roomData) => {
-        console.log("Room data is", roomData);
-      });
-
       // Listening for message
       socketRef.current.on(
         ACTIONS.MESSAGE,
@@ -183,7 +193,7 @@ function EditorPage() {
       }
     }
 
-    if (!isSolo) {
+    if (!isSoloRef.current) {
       init();
     }
     // getAllRuntimes();
@@ -194,7 +204,7 @@ function EditorPage() {
         socketRef.current.off(ACTIONS.DISCONNECTED);
       }
     };
-  }, [username, isSolo]);
+  }, [username, isSoloRef]);
 
   function handleModalJoinClick(username) {
     if (username.length < 5 || username.length > 20) {
@@ -318,6 +328,11 @@ function EditorPage() {
           codeEditorRef={codeEditorRef}
           socketRef={socketRef}
           roomId={roomId}
+          docRef={docRef}
+          providerRef={providerRef}
+          username={username}
+          isSolo={isSoloRef.current}
+          clients={clients}
           codeEditorContent={codeEditorContent}
           setCodeEditorContent={setCodeEditorContent}
           codeEditorOutput={codeEditorOutput}
@@ -338,9 +353,10 @@ function EditorPage() {
       label: "Canvas",
       content: (
         <Canvas
-          username={!location.state ? username : location.state.username}
+          username={username}
           roomId={roomId}
           editorRef={editorRef}
+          isSolo={isSoloRef.current}
         />
       ),
     },
@@ -348,9 +364,11 @@ function EditorPage() {
       label: "Text Editor",
       content: (
         <TextEditor
-          socketRef={socketRef}
-          textContent={textContent}
-          setTextContent={setTextContent}
+          clients={clients}
+          docRef={docRef}
+          providerRef={providerRef}
+          username={username}
+          isSolo={isSoloRef.current}
         />
       ),
     },
@@ -358,8 +376,8 @@ function EditorPage() {
 
   return (
     <div className="overflow-x-hidden overflow-y-hidden">
-      {showLoader && !isSolo && <CodeboardLoader />}
-      {showModal && !isSolo && (
+      {showLoader && !isSoloRef.current && <CodeboardLoader />}
+      {showModal && !isSoloRef.current && (
         <div className="absolute top-0 z-50 w-full h-full overflow-y-hidden opacity-95 bg-white-300 backdrop-blur-sm bg-opacity-10">
           <motion.div
             initial={{ y: -20, opacity: 0 }}
@@ -386,7 +404,7 @@ function EditorPage() {
         isLoadingContent={isLoadingContent}
         setIsLoadingContent={setIsLoadingContent}
         pistonSupportedRuntimes={pistonSupportedRuntimes}
-        isSolo={isSolo}
+        isSolo={isSoloRef.current}
         setOpenCollaborationPopup={setOpenCollaborationPopup}
       />
     </div>

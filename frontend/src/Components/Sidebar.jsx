@@ -29,6 +29,7 @@ function Sidebar({
   messages,
   clients,
   activeTab,
+  userColor,
   codeBoardBotResults,
   setCodeBoardBotResults,
   isLoadingImg,

@@ -4,6 +4,14 @@ require("dotenv").config();
 const fileUpload = require("express-fileupload");
 const { Server } = require("socket.io");
 const http = require("http");
+
+const { YSocketIO } = require("y-socket.io/dist/server");
+const Y = require("yjs");
+const ws = require("ws");
+const fs = require("fs");
+const path = require("path");
+const userSocketMapFilePath = path.join(__dirname, "userSocketMap.json");
+
 const { ACTIONS } = require("./Actions");
 const { analyzeImage, generateContent } = require("./GoogleGemini");
 
@@ -15,6 +23,22 @@ const io = new Server(server, {
   },
 });
 
+const ysocketio = new YSocketIO(io, {
+  gcEnabled: false,
+});
+ysocketio.initialize();
+
+// ysocketio.on("document-update", (update) => {
+//   console.log(
+//     "Document updated",
+//     ysocketio.documents.get("demo1").getText("monaco").toString()
+//   );
+// });
+
+// ysocketio.on("document-loaded", (doc) => {
+//   console.log("Document loadedd demo1", ysocketio.documents.get("demo1").getText("monaco"));
+// });
+
 app.use(
   cors({
     origin: "*",
@@ -24,15 +48,28 @@ app.use(
 app.use(express.json());
 app.use(fileUpload());
 
-const userSocketMap = {};
+let userSocketMap = {};
 const roomData = {};
+
+// try {
+//   const data = fs.readFileSync(userSocketMapFilePath, "utf8");
+//   if (data) {
+//     userSocketMap = JSON.parse(data);
+//   }
+//   console.log("User socket map is found", userSocketMap);
+// } catch (err) {
+//   if (err.code !== "ENOENT") {
+//     console.error("Error reading userSocketMap.json:", err);
+//   }
+// }
 
 function getAllConnectedClients(roomId) {
   return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
     (socketId) => {
       return {
         socketId,
-        username: userSocketMap[socketId],
+        username: userSocketMap[socketId].username,
+        userColor: userSocketMap[socketId].userColor,
       };
     }
   );
@@ -50,6 +87,17 @@ function generateTimeStamp() {
   return timestamp;
 }
 
+function getRandomColor() {
+  let r = Math.floor(Math.random() * 128) + 128;
+  let g = Math.floor(Math.random() * 128) + 128;
+  let b = Math.floor(Math.random() * 128) + 128;
+
+  return (
+    "#" +
+    ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()
+  );
+}
+
 io.on("connection", (socket) => {
   console.log("New client connected", socket.id);
 
@@ -64,7 +112,14 @@ io.on("connection", (socket) => {
         text: "",
       };
     }
-    userSocketMap[socket.id] = username;
+    userSocketMap[socket.id] = {
+      username: username,
+      userColor: getRandomColor(),
+    };
+    // fs.writeFileSync(
+    //   userSocketMapFilePath,
+    //   JSON.stringify(userSocketMap, null, 2)
+    // );
     socket.join(roomId);
     const clients = getAllConnectedClients(roomId);
     clients.forEach((client) => {
@@ -113,6 +168,7 @@ io.on("connection", (socket) => {
       message,
       id: Date.now(),
       username: userSocketMap[socket.id],
+      socketId: socket.id,
       timestamp: generateTimeStamp(),
     });
   });
@@ -120,13 +176,36 @@ io.on("connection", (socket) => {
   socket.on("disconnecting", () => {
     const rooms = [...socket.rooms];
     rooms.forEach((roomId) => {
-      getAllConnectedClients(roomId).length === 1 && delete roomData[roomId];
+      const remainingClients = getAllConnectedClients(roomId);
+
+      // Emit a disconnect event to others in the room
       socket.to(roomId).emit(ACTIONS.DISCONNECTED, {
         socketId: socket.id,
-        username: userSocketMap[socket.id],
+        username: userSocketMap[socket.id].username,
       });
+
+      // If this was the last client, clean up the room and Yjs doc
+      if (remainingClients.length === 1) {
+        delete roomData[roomId];
+
+        // Access the Yjs document and destroy it
+        const doc = ysocketio.documents.get(roomId); // Fetch the Yjs doc by roomId
+        if (doc) {
+          doc.destroy(); // Destroy the document
+          console.log(`Destroyed Yjs document for room: ${roomId}`);
+        }
+      }
     });
+
+    // Clean up user mappings from memory and file
     delete userSocketMap[socket.id];
+
+    // Update the JSON file with the removed user
+    // fs.writeFileSync(
+    //   userSocketMapFilePath,
+    //   JSON.stringify(userSocketMap, null, 2)
+    // );
+
     socket.leave();
   });
 });

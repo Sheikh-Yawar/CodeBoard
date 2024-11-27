@@ -1,17 +1,19 @@
+import * as Y from "yjs";
+import { SocketIOProvider } from "y-socket.io";
+import { MonacoBinding } from "y-monaco";
 import Editor from "@monaco-editor/react";
 import { motion } from "framer-motion";
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { SettingsContext } from "../../context/SettingsContext";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { TbGripHorizontal } from "react-icons/tb";
 import { IoMdCloseCircleOutline } from "react-icons/io";
 import { GrClear } from "react-icons/gr";
-
-import ACTIONS from "../Actions";
 import { FaSquarePlus } from "react-icons/fa6";
 import { AddFilePopup } from "./AddFilePopup";
-import toast from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { StartCollaborationPopup } from "./StartCollaborationPopup";
+const serverURL = import.meta.env.VITE_SERVER_URL;
 
 const CodeEditor = ({
   codeEditorRef,
@@ -19,6 +21,10 @@ const CodeEditor = ({
   setCodeEditorContent,
   socketRef,
   roomId,
+  docRef,
+  providerRef,
+  username,
+  isSolo,
   codeEditorOutput,
   setCodeEditorOutput,
   pistonSupportedRuntimes,
@@ -39,6 +45,21 @@ const CodeEditor = ({
     index: 0,
   });
   const [isAddingFile, setIsAddingNewFile] = useState(false);
+  const localUser = useRef({
+    id: Math.random(),
+    name: username, // Replace with your username
+    color: getRandomColor(),
+  });
+  const awarenessRef = useRef(null);
+  const fileMapRef = useRef(null);
+
+  // Monitor for username changes and update local state
+  useEffect(() => {
+    if (username && awarenessRef.current) {
+      localUser.current.name = username;
+      awarenessRef.current.setLocalState({ ...localUser.current });
+    }
+  }, [username, awarenessRef.current]);
 
   const [contextMenu, setContextMenu] = useState({
     visible: false,
@@ -65,28 +86,82 @@ const CodeEditor = ({
   };
 
   const handleEditorChange = (value) => {
+    if (isSolo) {
+      console.log("Handling local changes", isSolo);
+      filesData[activeTabData.index].content = value;
+    }
     // socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code: value });
-    // setCodeEditorContent(value);
-    filesData[activeTabData.index].content = value;
+    // // setCodeEditorContent(value);
   };
+
+  const initializeFilesData = () => {
+    if (!fileMapRef.current) return;
+
+    filesData.forEach((file, index) => {
+      // Check if the file already has a Y.Text in the Y.Map
+      if (!fileMapRef.current.has(file.fileName)) {
+        const yText = new Y.Text(file.content || " "); // Initialize with existing content
+        fileMapRef.current.set(file.fileName, yText); // Add to Y.Map
+      }
+    });
+  };
+
   const handleEditorMount = (editor) => {
-    codeEditorRef.current = editor;
-    editor.focus();
+    if (providerRef && providerRef.current) {
+      console.log("Handling Remote changes intialization started");
+      const codeEditorRef = { current: editor };
+      const provider = providerRef.current;
+
+      provider.on("status", (status) => {
+        console.log("Status is", status);
+      });
+      provider.on("sync", (isSync) => console.log("WebSocket sync:", isSync));
+
+      const awareness = provider.awareness;
+      awarenessRef.current = awareness;
+
+      // fileMapRef.current = docRef.current.getText("files");
+      // initializeFilesData();
+      // console.log("File Map Content:", Array.from(fileMapRef.current.entries()));
+      const type = docRef.current.getText("monaco");
+      // // Monaco-Yjs binding
+      const binding = new MonacoBinding(
+        type,
+        editor.getModel(),
+        new Set([editor]),
+        awarenessRef.current
+      );
+    }
   };
+
+  // Helper to generate random user colors
+  function getRandomColor() {
+    return `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+  }
+
   const handleAddFile = () => {
+    if (!isSolo) {
+      toast(
+        "The multi-file feature is currently available only in solo mode. We're actively working on bringing it to collaborative mode soon.",
+        { icon: "⚒️" }
+      );
+      return;
+    }
     existingFileIndex.current = -1;
     setIsAddingNewFile(true);
   };
 
   const handleRunCodeClick = () => {
-    if (filesData[activeTabData.index].content === "") {
+    const content =
+      isSolo === true
+        ? isSolo && filesData[activeTabData.index].content
+        : docRef.current.getText("monaco").toString();
+
+    if (content.length === 0) {
       toast("Please enter some code to execute.", { icon: "🥲" });
       return;
     }
-    runCode(
-      filesData[activeTabData.index].language,
-      filesData[activeTabData.index].content
-    );
+    runCode(filesData[activeTabData.index].language, content);
   };
 
   const settingsContext = useContext(SettingsContext);
@@ -192,7 +267,6 @@ const CodeEditor = ({
             className="text-5xl"
             language={filesData[activeTabData.index].language}
             theme={settingsContext.settings.theme}
-            defaultValue="// some comment"
             onMount={handleEditorMount}
             value={filesData[activeTabData.index].content}
             onChange={handleEditorChange}

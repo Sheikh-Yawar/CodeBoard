@@ -9,6 +9,7 @@ const Tabs = ({
   socketRef,
   editorRef,
   messages,
+
   codeBoardBotResults,
   setCodeBoardBotResults,
   isLoadingImg,
@@ -66,7 +67,7 @@ const TabPanel = ({ children, active }) => {
       role="tabpanel"
       hidden={!active}
       id={`panel-${children}`}
-      className={`h-full overflow-y-auto ${active ? "block" : "hidden"}`} // Apply necessary classes for height and overflow
+      className={`h-full w-full overflow-y-auto ${active ? "block" : "hidden"}`} // Apply necessary classes for height and overflow
     >
       {active && children}
     </div>
