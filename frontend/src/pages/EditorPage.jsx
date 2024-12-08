@@ -42,7 +42,7 @@ function EditorPage() {
   const [isCodeExecutionRunning, setIsCodeExecutionRunning] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
 
-  const [textContent, setTextContent] = useState("");
+  const [textEditorContent, setTextEditorContent] = useState("");
   const [clients, setClients] = useState([]);
   const [messages, setMessages] = useState([]);
   const [pistonSupportedRuntimes, setPistonSupportedRuntimes] = useState([]);
@@ -61,6 +61,7 @@ function EditorPage() {
     }
 
     if (
+      roomId &&
       !sessionStorage.getItem("currentUsername") &&
       (!location.state || !location.state.username)
     ) {
@@ -139,13 +140,6 @@ function EditorPage() {
         if (roomData) {
           console.log(roomData);
         }
-        if (roomData && roomData.code !== null) {
-          setCodeEditorContent(roomData.code);
-        }
-
-        if (roomData && roomData.text.length > 0) {
-          setTextContent(roomData.text);
-        }
         if (roomData && roomData.messages.length > 0) {
           setMessages(roomData.messages);
         }
@@ -195,6 +189,15 @@ function EditorPage() {
 
     if (!isSoloRef.current) {
       init();
+    } else {
+      if (localStorage.getItem("codeEditorContent")) {
+        setFilesData(JSON.parse(localStorage.getItem("codeEditorContent")));
+      }
+      if (localStorage.getItem("blocknoteContent")) {
+        setTextEditorContent(
+          JSON.parse(localStorage.getItem("blocknoteContent"))
+        );
+      }
     }
     // getAllRuntimes();
     return () => {
@@ -364,6 +367,7 @@ function EditorPage() {
       label: "Text Editor",
       content: (
         <TextEditor
+          textEditorContent={textEditorContent}
           clients={clients}
           docRef={docRef}
           providerRef={providerRef}

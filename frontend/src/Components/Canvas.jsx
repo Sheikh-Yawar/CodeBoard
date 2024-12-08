@@ -14,7 +14,6 @@ function Canvas({ roomId, username, editorRef, isSolo }) {
   const user = useTldrawUser({ userPreferences, setUserPreferences });
 
   const store = useSyncDemo({
-    // Initialize store regardless of isSolo
     roomId,
     userInfo: userPreferences,
   });
@@ -23,6 +22,7 @@ function Canvas({ roomId, username, editorRef, isSolo }) {
     <div className="w-full h-full">
       {isSolo ? (
         <Tldraw
+          persistenceKey="canvasContent"
           onMount={(editor) => {
             editorRef.current = editor;
             editor.user.updateUserPreferences({

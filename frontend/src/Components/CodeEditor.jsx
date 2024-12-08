@@ -55,7 +55,7 @@ const CodeEditor = ({
 
   // Monitor for username changes and update local state
   useEffect(() => {
-    if (username && awarenessRef.current) {
+    if (!isSolo && username && awarenessRef.current) {
       localUser.current.name = username;
       awarenessRef.current.setLocalState({ ...localUser.current });
     }
@@ -86,12 +86,9 @@ const CodeEditor = ({
   };
 
   const handleEditorChange = (value) => {
-    if (isSolo) {
-      console.log("Handling local changes", isSolo);
-      filesData[activeTabData.index].content = value;
-    }
-    // socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code: value });
-    // // setCodeEditorContent(value);
+    console.log("Handling local changes", isSolo);
+    filesData[activeTabData.index].content = value;
+    localStorage.setItem("codeEditorContent", JSON.stringify(filesData));
   };
 
   const initializeFilesData = () => {
@@ -107,6 +104,9 @@ const CodeEditor = ({
   };
 
   const handleEditorMount = (editor) => {
+    console.log(
+      "Handling Remote changes intialization started outiside providerref"
+    );
     if (providerRef && providerRef.current) {
       console.log("Handling Remote changes intialization started");
       const codeEditorRef = { current: editor };
@@ -240,12 +240,23 @@ const CodeEditor = ({
                         setContextMenu({ ...contextMenu, visible: false });
                         return;
                       }
-                      setFilesData((prevFilesData) => [
-                        ...prevFilesData.slice(0, contextMenu.index),
-                        ...prevFilesData.slice(contextMenu.index + 1),
-                      ]);
+                      const updatedFilesData = [
+                        ...filesData.slice(0, contextMenu.index),
+                        ...filesData.slice(contextMenu.index + 1),
+                      ];
+
+                      setFilesData(updatedFilesData);
 
                       setContextMenu({ ...contextMenu, visible: false });
+                      setActiveTabData({
+                        ...activeTabData,
+                        index:
+                          contextMenu.index - 1 < 0 ? 0 : contextMenu.index - 1,
+                      });
+                      localStorage.setItem(
+                        "codeEditorContent",
+                        JSON.stringify(updatedFilesData)
+                      );
                     }}
                   >
                     Delete
@@ -262,20 +273,33 @@ const CodeEditor = ({
               </button>
             )}
           </div>
-
-          <Editor
-            className="text-5xl"
-            language={filesData[activeTabData.index].language}
-            theme={settingsContext.settings.theme}
-            onMount={handleEditorMount}
-            value={filesData[activeTabData.index].content}
-            onChange={handleEditorChange}
-            options={{
-              fontSize: 17,
-              wordWrap: "on",
-              formatOnPaste: true,
-            }}
-          />
+          {isSolo && (
+            <Editor
+              className="text-5xl"
+              language={filesData[activeTabData.index].language}
+              theme={settingsContext.settings.theme}
+              value={filesData[activeTabData.index].content}
+              onChange={handleEditorChange}
+              options={{
+                fontSize: 17,
+                wordWrap: "on",
+                formatOnPaste: true,
+              }}
+            />
+          )}
+          {!isSolo && username && (
+            <Editor
+              className="text-5xl"
+              language={filesData[activeTabData.index].language}
+              theme={settingsContext.settings.theme}
+              onMount={handleEditorMount}
+              options={{
+                fontSize: 17,
+                wordWrap: "on",
+                formatOnPaste: true,
+              }}
+            />
+          )}
         </Panel>
         {showTerminal && (
           <>
