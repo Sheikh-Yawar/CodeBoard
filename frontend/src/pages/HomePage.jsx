@@ -1,6 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { OrbitingCirclesCodeBoard } from "../Components/External Components/OrbitingCircles/OrbitingCirclesCodeBoard.jsx";
 import { ShimmerButtonCodeBoard } from "../Components/External Components/ShimmerButton/ShimmerButtonCodeBoard.jsx";
@@ -99,6 +99,17 @@ function HomePage() {
                   buttonLabel="Go Solo"
                   handleClick={() => navigate("/editor")}
                 />
+              </div>
+              <div className="mt-48 text-sm text-gray-500">
+                Made with ❤️ by
+                <Link
+                  className="hover:border-b-[2px] border-userPrimary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  to="https://github.com/Sheikh-Yawar"
+                >
+                  Github
+                </Link>
               </div>
             </>
           </div>
